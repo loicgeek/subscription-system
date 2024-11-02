@@ -27,6 +27,7 @@ To install the `ntech-services/subscription-system` package, follow these steps:
   `bash
    composer require ntech-services/subscription-system
   `
+  
 2. Register Service Provider
 
 After installing the package, you should register the service provider in the `bootstrap/providers.php` file. Open `bootstrap/providers.php` and add the following line to the array:
