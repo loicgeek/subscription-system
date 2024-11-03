@@ -88,9 +88,9 @@ $user->subscribeToPlan($planPrice, $couponCode = null);
 
 You can manage subscriptions using the available methods in the `HasSubscriptions` trait:
 
-- Check active subscription: `$user->activeSubscription()`
-- Cancel subscription: `$user->cancelSubscription($softCancel = true)`
-- Update subscription plan: `$user->updateSubscription($newPlanPrice)`
+- Check active subscriptions: `$user->activeSubscriptions()`
+- Cancel subscription: `$subscription->cancelSubscription($softCancel = true)`
+- Update subscription plan: `$subscription->updateSubscription($newPlanPrice)`
 
 ### Subscription History
 

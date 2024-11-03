@@ -313,23 +313,17 @@ class Subscription extends Model
 
     public function cancelSubscription(bool $softCancel = true)
     {
-        $subscription = $this->activeSubscription();
-
-        if ($subscription) {
-            if ($softCancel) {
-                $subscription->update(['status' => SubscriptionStatus::CANCELED->value]);
-            } else {
-                $subscription->delete(); // Hard delete if not soft canceling
-            }
-
-           
+        if ($softCancel) {
+            $this->update(['status' => SubscriptionStatus::CANCELED->value]);
+        } else {
+            $this->delete(); // Hard delete if not soft canceling
         }
     }
 
     public function sendBillingReminder()
     {
 
-        if ($this->isToday()) {
+        if ($this->next_billing_date->isToday()) {
            
         }
     }
@@ -347,27 +341,22 @@ class Subscription extends Model
 
     public function isSubscriptionInGracePeriod(): bool
     {
-        $subscription = $this->activeSubscription();
 
-        if ($subscription) {
-            // Calculate grace period based on grace value and cycle
-            $graceValue = $subscription->grace_value; // Read from subscription
-            $graceCycle = $subscription->grace_cycle; // Read from subscription
-            
-            // Determine how many days to add based on grace cycle
-            $daysToAdd = match ($graceCycle) {
-                'daily' => $graceValue,
-                'weekly' => $graceValue * 7,
-                'monthly' => $graceValue * 30,
-                'quarterly' => $graceValue * 90,
-                'yearly' => $graceValue * 365,
-                default => 0,
-            };
+        // Calculate grace period based on grace value and cycle
+        $graceValue = $this->grace_value; // Read from subscription
+        $graceCycle = $this->grace_cycle; // Read from subscription
+        
+        // Determine how many days to add based on grace cycle
+        $daysToAdd = match ($graceCycle) {
+            'daily' => $graceValue,
+            'weekly' => $graceValue * 7,
+            'monthly' => $graceValue * 30,
+            'quarterly' => $graceValue * 90,
+            'yearly' => $graceValue * 365,
+            default => 0,
+        };
 
-            $endOfGracePeriod = Carbon::parse($subscription->next_billing_date)->addDays($daysToAdd);
-            return Carbon::now()->isBefore($endOfGracePeriod);
-        }
-
-        return false;
+        $endOfGracePeriod = Carbon::parse($this->next_billing_date)->addDays($daysToAdd);
+        return Carbon::now()->isBefore($endOfGracePeriod);
     }
 }
