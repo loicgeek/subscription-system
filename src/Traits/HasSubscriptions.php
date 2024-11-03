@@ -41,7 +41,7 @@ trait HasSubscriptions
 
         // Create the new subscription
         $subscription = $this->subscriptions()->updateOrCreate([
-            "subscribable_id" => $this->id,
+            "subscribable_id" => $this->getKey(),
             "subscribable_type" => get_class($this),
         ],[
             'plan_id' => $planPrice->plan->id,

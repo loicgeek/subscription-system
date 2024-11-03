@@ -230,7 +230,7 @@ class Subscription extends Model
 
 
 
-    function startSubscription()
+    function startBilling()
     {
        
         $planPrice = $this->planPrice;
