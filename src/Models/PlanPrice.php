@@ -8,10 +8,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use NtechServices\SubscriptionSystem\Database\Factories\PlanPriceFactory;
 
+/**
+ * Class PlanPrice
+ *
+ * Represents the pricing details for a specific subscription plan, including the price, currency, and billing cycle.
+ *
+ * @property int $id
+ * @property int $plan_id
+ * @property float $price
+ * @property string $currency
+ * @property string $billing_cycle
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class PlanPrice extends Model
 {
     use HasFactory;
 
+    /**
+     * @var array<int, string> The attributes that are mass assignable.
+     */
     protected $fillable = [
         'plan_id',
         'price',
@@ -19,16 +35,29 @@ class PlanPrice extends Model
         'billing_cycle',
     ];
 
+    /**
+     * @var string $table The table associated with the model.
+     */
     protected $table;
 
+    /**
+     * PlanPrice constructor.
+     *
+     * Sets the table name dynamically from configuration.
+     *
+     * @param array $attributes Initial attributes for the model instance
+     */
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
         $this->table = config('subscription.tables.plan_prices');
     }
 
-
-    use HasFactory;
+    /**
+     * Creates a new factory instance for the PlanPrice model.
+     *
+     * @return Factory
+     */
     protected static function newFactory(): Factory
     {
         return PlanPriceFactory::new();
@@ -36,6 +65,8 @@ class PlanPrice extends Model
 
     /**
      * Get the plan that owns the price.
+     *
+     * @return BelongsTo
      */
     public function plan(): BelongsTo
     {

@@ -31,35 +31,28 @@ trait HasSubscriptions
             ->first();
     }
 
-    public function subscribeToPlan(Plan $plan, BillingCycle $billingCycle, string $couponCode = null)
+    public function subscribeToPlan(PlanPrice $planPrice, string $couponCode = null)
     {
-        // Retrieve the price for the selected plan and billing cycle
-        $price = PlanPrice::where('plan_id', $plan->id)
-                          ->where('billing_cycle', $billingCycle->value)
-                          ->first();
-
-        if (!$price) {
-            throw new \Exception("Price not found for this billing cycle.");
-        }
+        
 
         // Read grace period configuration
         $graceValue = config('subscription.default.grace_value'); // Grace value as a numerical value
         $graceCycle = config('subscription.default.grace_cycle'); // Grace cycle
 
         // Handle coupon application
-        $discountAmount = $this->applyCoupon($couponCode, $price, $couponId);
+        $discountAmount = $this->applyCoupon($couponCode, $planPrice, $couponId);
 
         // Create the new subscription
         $subscription = $this->subscriptions()->updateOrCreate([
             "subscribable_id" => $this->id,
             "subscribable_type" => get_class($this),
         ],[
-            'plan_id' => $plan->id,
-            'plan_price_id' => $price->id,
+            'plan_id' => $planPrice->plan->id,
+            'plan_price_id' => $planPrice->id,
             'start_date' => Carbon::now(),
-            'next_billing_date' => $this->calculateNextBillingDate($billingCycle),
-            'amount_due' => max(0, $price->price - $discountAmount), // Ensure amount due is not negative
-            'currency' => $price->currency,
+            'next_billing_date' => $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle)),
+            'amount_due' => max(0, $planPrice->price - $discountAmount), // Ensure amount due is not negative
+            'currency' => $planPrice->currency,
             'status' => SubscriptionStatus::PENDING->value,
             'grace_value' => $graceValue, // Read grace value from config
             'grace_cycle' => $graceCycle, // Read grace cycle from config
@@ -137,19 +130,12 @@ trait HasSubscriptions
         return 0; // Invalid coupon
     }
 
-    public function updateSubscription(Plan $newPlan, BillingCycle $billingCycle)
+    public function updateSubscription(PlanPrice $newPrice)
     {
         $subscription = $this->activeSubscription();
 
         if ($subscription) {
-            // Retrieve the new price
-            $newPrice = PlanPrice::where('plan_id', $newPlan->id)
-                                 ->where('billing_cycle', $billingCycle->value)
-                                 ->first();
-
-            if (!$newPrice) {
-                throw new \Exception("New price not found for this billing cycle.");
-            }
+           
 
             // Calculate the prorated amount only if enabled in config
             $proratedAmount = config('subscription.default.enable_prorated_billing')
@@ -158,10 +144,10 @@ trait HasSubscriptions
 
             // Update the subscription with the new plan and prorated amount
             $subscription->update([
-                'plan_id' => $newPlan->id,
+                'plan_id' => $newPrice->plan->id,
                 'plan_price_id' => $newPrice->id,
                 'amount_due' => $newPrice->price - $proratedAmount,
-                'next_billing_date' => $this->calculateNextBillingDate($billingCycle),
+                'next_billing_date' => $this->calculateNextBillingDate(BillingCycle::from($newPrice->billing_cycle)),
                 'prorated_amount' => $proratedAmount,
             ]);
         }
