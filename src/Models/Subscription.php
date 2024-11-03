@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use NtechServices\SubscriptionSystem\Enums\BillingCycle;
 use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
 
 /**
@@ -34,6 +35,7 @@ use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
  */
 class Subscription extends Model
 {
+    
     protected $fillable = [
         'plan_id',
         'plan_price_id',
@@ -146,7 +148,8 @@ class Subscription extends Model
     public function renew(): void
     {
         if ($this->isExpired()) {
-            $this->next_billing_date = $this->calculateNextBillingDate();
+            $planPrice = $this->planPrice;
+            $this->next_billing_date = $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle));
             $this->amount_due = $this->calculateAmountDue();
             $this->status = SubscriptionStatus::ACTIVE->value;
             $this->save();
@@ -222,5 +225,149 @@ class Subscription extends Model
         static::deleting(function ($subscription) {
             $subscription->recordHistory($subscription->status, 'Subscription deleted.');
         });
+    }
+
+
+
+
+    function startSubscription()
+    {
+       
+        $planPrice = $this->planPrice;
+            // Read trial value and cycle from the plan
+        $trialValue = $planPrice->trial_value; // Number of trial days or units
+        $trialCycle = $planPrice->trial_cycle; // Trial cycle
+
+        // Handle trial period
+        $trialEndsAt = null;
+        if ($trialValue > 0) {
+            switch ($trialCycle) {
+                case 'daily':
+                    $trialEndsAt = Carbon::now()->addDays($trialValue);
+                    break;
+                case 'weekly':
+                    $trialEndsAt = Carbon::now()->addWeeks($trialValue);
+                    break;
+                case 'monthly':
+                    $trialEndsAt = Carbon::now()->addMonths($trialValue);
+                    break;
+                case 'quarterly':
+                    $trialEndsAt = Carbon::now()->addMonths(3 * $trialValue);
+                    break;
+                case 'yearly':
+                    $trialEndsAt = Carbon::now()->addYears($trialValue);
+                    break;
+            }
+        }
+
+        $this->trial_ends_at = $trialEndsAt; 
+        $this->next_billing_date  = $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle));
+        $this->status = SubscriptionStatus::ACTIVE->value;
+        $this->save();
+        
+    }
+    
+
+    public function updateSubscription(PlanPrice $newPrice)
+    {
+        // Calculate the prorated amount only if enabled in config
+        $proratedAmount = config('subscription.default.enable_prorated_billing')
+        ? $this->calculateProratedAmount($this)
+        : 0; // Set to 0 if prorated billing is disabled
+
+        // Update the subscription with the new plan and prorated amount
+        $this->update([
+            'plan_id' => $newPrice->plan->id,
+            'plan_price_id' => $newPrice->id,
+            'amount_due' => $newPrice->price - $proratedAmount,
+            'next_billing_date' => $this->calculateNextBillingDate(BillingCycle::from($newPrice->billing_cycle)),
+            'prorated_amount' => $proratedAmount,
+        ]);
+    }
+
+    protected function calculateProratedAmount(): float
+    {
+        // Get the remaining time in the current billing cycle
+        $remainingDays = Carbon::now()->diffInDays($this->next_billing_date);
+
+        // Calculate the daily rate based on the current plan price
+        $dailyRate = $this->amount_due / $this->daysInBillingCycle($this->plan_price_id);
+
+        // Calculate the prorated amount
+        return $dailyRate * $remainingDays;
+    }
+
+    protected function daysInBillingCycle(int $planPriceId): int
+    {
+        // Assuming monthly billing cycles have 30 days
+        $price = PlanPrice::find($planPriceId);
+        return match ($price->billing_cycle) {
+            'daily' => 1,
+            'weekly' => 7,
+            'monthly' => 30,
+            'quarterly' => 90,
+            'yearly' => 365,
+            default => 30,
+        };
+    }
+
+    public function cancelSubscription(bool $softCancel = true)
+    {
+        $subscription = $this->activeSubscription();
+
+        if ($subscription) {
+            if ($softCancel) {
+                $subscription->update(['status' => SubscriptionStatus::CANCELED->value]);
+            } else {
+                $subscription->delete(); // Hard delete if not soft canceling
+            }
+
+           
+        }
+    }
+
+    public function sendBillingReminder()
+    {
+
+        if ($this->isToday()) {
+           
+        }
+    }
+
+    protected function calculateNextBillingDate(BillingCycle $billingCycle)
+    {
+        return match ($billingCycle) {
+            BillingCycle::DAILY => Carbon::now()->addDay(),
+            BillingCycle::WEEKLY => Carbon::now()->addWeek(),
+            BillingCycle::MONTHLY => Carbon::now()->addMonth(),
+            BillingCycle::QUARTERLY => Carbon::now()->addMonths(3),
+            BillingCycle::YEARLY => Carbon::now()->addYear(),
+        };
+    }
+
+    public function isSubscriptionInGracePeriod(): bool
+    {
+        $subscription = $this->activeSubscription();
+
+        if ($subscription) {
+            // Calculate grace period based on grace value and cycle
+            $graceValue = $subscription->grace_value; // Read from subscription
+            $graceCycle = $subscription->grace_cycle; // Read from subscription
+            
+            // Determine how many days to add based on grace cycle
+            $daysToAdd = match ($graceCycle) {
+                'daily' => $graceValue,
+                'weekly' => $graceValue * 7,
+                'monthly' => $graceValue * 30,
+                'quarterly' => $graceValue * 90,
+                'yearly' => $graceValue * 365,
+                default => 0,
+            };
+
+            $endOfGracePeriod = Carbon::parse($subscription->next_billing_date)->addDays($daysToAdd);
+            return Carbon::now()->isBefore($endOfGracePeriod);
+        }
+
+        return false;
     }
 }
