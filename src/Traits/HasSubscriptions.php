@@ -5,6 +5,7 @@ namespace NtechServices\SubscriptionSystem\Traits;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use NtechServices\SubscriptionSystem\Config\ConfigHelper;
 use NtechServices\SubscriptionSystem\Models\Plan;
 use NtechServices\SubscriptionSystem\Models\PlanPrice;
 use NtechServices\SubscriptionSystem\Models\Subscription;
@@ -16,7 +17,7 @@ trait HasSubscriptions
 {
     public function subscriptions() : MorphMany
     {
-        return $this->morphMany(Subscription::class, 'subscribable');
+        return $this->morphMany(ConfigHelper::getConfigClass('subscriptions',Subscription::class), 'subscribable');
     }
 
     public function activeSubscriptions():Collection
@@ -34,8 +35,8 @@ trait HasSubscriptions
     public function subscribeToPlan(PlanPrice $planPrice, string $couponCode = null)
     {
         // Read grace period configuration
-        $graceValue = config('subscription.default.grace_value'); // Grace value as a numerical value
-        $graceCycle = config('subscription.default.grace_cycle'); // Grace cycle
+        $graceValue = ConfigHelper::get('default.grace_value'); // Grace value as a numerical value
+        $graceCycle = ConfigHelper::get('default.grace_cycle'); // Grace cycle
 
         // Handle coupon application
         $discountAmount = $this->applyCoupon($couponCode, $planPrice, $couponId);

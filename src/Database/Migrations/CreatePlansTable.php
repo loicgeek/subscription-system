@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create(config('subscription.tables.plans'), function (Blueprint $table) {
+        Schema::create(ConfigHelper::getConfigTable('plans'), function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique()->after('name'); // Assuming 'name' is the previous column
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists(config('subscription.tables.plans'));
+        Schema::dropIfExists(ConfigHelper::getConfigTable('plans'));
     }
 };

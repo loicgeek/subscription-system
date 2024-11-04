@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use NtechServices\SubscriptionSystem\Config\ConfigHelper;
 use NtechServices\SubscriptionSystem\Database\Factories\PlanFactory;
 
 /**
@@ -52,7 +53,7 @@ class Plan extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('subscription.tables.plans');
+        $this->table = ConfigHelper::getConfigTable('plans','plans');
     }
 
     /**

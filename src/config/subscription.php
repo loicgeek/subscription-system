@@ -15,4 +15,11 @@ return [
         'features' => env('SUBSCRIPTION_FEATURES_TABLE', 'features'),
         'coupons' => env('SUBSCRIPTION_COUPON_TABLE', 'coupons'),
     ],
+    'models'=>[
+        'plan' => NtechServices\SubscriptionSystem\Models\Plan::class,
+        'subscription' => NtechServices\SubscriptionSystem\Models\Subscription::class,
+        'plan_price' => NtechServices\SubscriptionSystem\Models\PlanPrice::class,
+        'coupon' => NtechServices\SubscriptionSystem\Models\Coupon::class
+    ],
+
 ];

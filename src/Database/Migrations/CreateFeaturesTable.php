@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create(config('subscription.tables.features'), function (Blueprint $table) {
+        Schema::create(ConfigHelper::getConfigTable('features'), function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique(); // Unique name for the feature
             $table->text('description')->nullable(); // Optional description of the feature
@@ -20,6 +20,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists(config('subscription.tables.features')); // Drop the table if it exists
+        Schema::dropIfExists(ConfigHelper::getConfigTable('features')); // Drop the table if it exists
     }
 };

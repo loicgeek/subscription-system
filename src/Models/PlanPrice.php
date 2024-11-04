@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use NtechServices\SubscriptionSystem\Config\ConfigHelper;
 use NtechServices\SubscriptionSystem\Database\Factories\PlanPriceFactory;
+use PSpell\Config;
 
 /**
  * Class PlanPrice
@@ -50,7 +52,7 @@ class PlanPrice extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('subscription.tables.plan_prices');
+        $this->table = ConfigHelper::getConfigTable('plan_prices','plan_prices');
     }
 
     /**
@@ -70,6 +72,6 @@ class PlanPrice extends Model
      */
     public function plan(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(ConfigHelper::getConfigClass('plan', Plan::class));
     }
 }

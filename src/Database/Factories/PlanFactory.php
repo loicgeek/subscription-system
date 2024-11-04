@@ -2,11 +2,17 @@
  namespace NtechServices\SubscriptionSystem\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use NtechServices\SubscriptionSystem\Config\ConfigHelper;
 use NtechServices\SubscriptionSystem\Models\Plan;
 
 class PlanFactory extends Factory
 {
-    protected $model = Plan::class;
+    protected $model;
+
+    public function __construct()
+    {
+        $this->model = ConfigHelper::getConfigClass('plan', Plan::class);
+    }
 
     public function definition()
     {

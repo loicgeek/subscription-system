@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create(config('subscription.tables.plan_prices'), function (Blueprint $table) {
+        Schema::create(ConfigHelper::getConfigTable('plan_prices'), function (Blueprint $table) {
             $table->id();
             $table->foreignId('plan_id')->constrained()->onDelete('cascade'); // Foreign key referencing plans table
             $table->decimal('price', 10, 2); // Price for the plan
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists(config('subscription.tables.plan_prices')); // Drop the table if it exists
+        Schema::dropIfExists(ConfigHelper::getConfigTable('plan_prices')); // Drop the table if it exists
     }
 };

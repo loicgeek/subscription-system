@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use NtechServices\SubscriptionSystem\Config\ConfigHelper;
 use NtechServices\SubscriptionSystem\Enums\BillingCycle;
 use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
 
@@ -67,7 +68,7 @@ class Subscription extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('subscription.tables.subscriptions');
+        $this->table = ConfigHelper::getConfigTable('subscriptions','subscriptions');
     }
 
     /**
@@ -77,7 +78,7 @@ class Subscription extends Model
      */
     public function plan(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(ConfigHelper::getConfigClass('plan', Plan::class));
     }
 
     /**
@@ -271,7 +272,7 @@ class Subscription extends Model
     public function updateSubscription(PlanPrice $newPrice)
     {
         // Calculate the prorated amount only if enabled in config
-        $proratedAmount = config('subscription.default.enable_prorated_billing')
+        $proratedAmount = ConfigHelper::get('default.enable_prorated_billing')
         ? $this->calculateProratedAmount($this)
         : 0; // Set to 0 if prorated billing is disabled
 

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create(config('subscription.tables.subscriptions'), function (Blueprint $table) {
+        Schema::create(ConfigHelper::getConfigTable('subscriptions'), function (Blueprint $table) {
             $table->id();
             $table->integer('subscribable_id'); 
             $table->string('subscribable_type'); 
@@ -34,6 +34,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists(config('subscription.tables.subscriptions'));
+        Schema::dropIfExists(ConfigHelper::getConfigTable('subscriptions'));
     }
 };
