@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ConfigHelper
 {
-    public $configPrefix = 'subscription';
+    public static $configPrefix = 'subscription';
     public static function get(string $key, $default = null)
     {
         return config(ConfigHelper::$configPrefix.".{$key}", $default);
