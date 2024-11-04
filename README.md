@@ -69,7 +69,7 @@ After installing the package, you should register the service provider in the `b
 
 ## Configuration
 
-After publishing the configuration file, you can find it at `config/subscription.php`. Customize the settings according to your application's requirements.
+After publishing the configuration file, you can find it at `Config/subscription.php`. Customize the settings according to your application's requirements.
 
 ## Usage
 
