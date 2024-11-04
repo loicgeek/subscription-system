@@ -25,7 +25,7 @@ class SubscriptionServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__.'/config/subscription.php' => config_path('subscription.php'),
-        ]);
+        ],'subscription-config');
     }
 
     public function register()
