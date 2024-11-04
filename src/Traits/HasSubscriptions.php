@@ -3,6 +3,7 @@
 namespace NtechServices\SubscriptionSystem\Traits;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use NtechServices\SubscriptionSystem\Models\Plan;
 use NtechServices\SubscriptionSystem\Models\PlanPrice;
@@ -18,13 +19,13 @@ trait HasSubscriptions
         return $this->morphMany(Subscription::class, 'subscribable');
     }
 
-    public function activeSubscriptions()
+    public function activeSubscriptions():Collection
     {
         return $this->subscriptions()
             ->whereIn('status', [SubscriptionStatus::ACTIVE->value, SubscriptionStatus::TRIALING->value])
             ->get();
     }
-    public function pendingSubscriptions(): ?Subscription
+    public function pendingSubscriptions(): Collection
     {
         return $this->subscriptions()
             ->whereIn('status', [SubscriptionStatus::PENDING->value])
@@ -84,5 +85,15 @@ trait HasSubscriptions
         }
 
         return 0; // Invalid coupon
+    }
+    protected function calculateNextBillingDate(BillingCycle $billingCycle)
+    {
+        return match ($billingCycle) {
+            BillingCycle::DAILY => Carbon::now()->addDay(),
+            BillingCycle::WEEKLY => Carbon::now()->addWeek(),
+            BillingCycle::MONTHLY => Carbon::now()->addMonth(),
+            BillingCycle::QUARTERLY => Carbon::now()->addMonths(3),
+            BillingCycle::YEARLY => Carbon::now()->addYear(),
+        };
     }
 }
