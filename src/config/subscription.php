@@ -2,24 +2,25 @@
 
 return [
     'default' => [
-        'trial_days' => 30,              // Default trial duration    
         'enable_prorated_billing' => false,
         'grace_value' => 5, // Example grace value
         'grace_cycle' => 'daily', // Example grace cycle
     ],
     'tables' => [
-        'plans' => env('SUBSCRIPTION_PLAN_TABLE', 'plans'),
-        'subscriptions' => env('SUBSCRIPTION_SUBSCRIPTION_TABLE', 'subscriptions'),
-        'plan_prices' => env('SUBSCRIPTION_PLAN_PRICE_TABLE', 'plan_prices'),
-        'plan_feature' => env('SUBSCRIPTION_PLAN_FEATURE_TABLE', 'plan_feature'),
-        'features' => env('SUBSCRIPTION_FEATURES_TABLE', 'features'),
-        'coupons' => env('SUBSCRIPTION_COUPON_TABLE', 'coupons'),
+        'plans' =>'plans',
+        'subscriptions' => 'subscriptions',
+        'plan_prices' => 'plan_prices',
+        'plan_feature' => 'plan_feature',
+        'features' => 'features',
+        'coupons' => 'coupons',
     ],
     'models'=>[
+        'feature' => NtechServices\SubscriptionSystem\Models\Feature::class,
         'plan' => NtechServices\SubscriptionSystem\Models\Plan::class,
         'subscription' => NtechServices\SubscriptionSystem\Models\Subscription::class,
         'plan_price' => NtechServices\SubscriptionSystem\Models\PlanPrice::class,
-        'coupon' => NtechServices\SubscriptionSystem\Models\Coupon::class
+        'coupon' => NtechServices\SubscriptionSystem\Models\Coupon::class,
+        'subscription_history' => NtechServices\SubscriptionSystem\Models\SubscriptionHistory::class
     ],
 
 ];

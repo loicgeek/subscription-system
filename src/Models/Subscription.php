@@ -88,7 +88,7 @@ class Subscription extends Model
      */
     public function planPrice(): BelongsTo
     {
-        return $this->belongsTo(PlanPrice::class);
+        return $this->belongsTo(ConfigHelper::getConfigClass('plan_price', PlanPrice::class));
     }
 
     /**
@@ -98,7 +98,7 @@ class Subscription extends Model
      */
     public function coupon(): BelongsTo
     {
-        return $this->belongsTo(Coupon::class);
+        return $this->belongsTo(ConfigHelper::getConfigClass('coupon', Coupon::class));
     }
 
     /**
@@ -108,7 +108,7 @@ class Subscription extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(SubscriptionHistory::class);
+        return $this->hasMany(ConfigHelper::getConfigClass('subscription_history', SubscriptionHistory::class) );
     }
 
     /**

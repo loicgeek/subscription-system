@@ -73,7 +73,7 @@ class Plan extends Model
      */
     public function planPrices(): HasMany
     {
-        return $this->hasMany(PlanPrice::class);
+        return $this->hasMany(ConfigHelper::getConfigClass('plan_price', Feature::class));
     }
 
     /**
@@ -85,7 +85,7 @@ class Plan extends Model
      */
     public function features(): BelongsToMany
     {
-        return $this->belongsToMany(Feature::class)
+        return $this->belongsToMany(ConfigHelper::getConfigClass('feature', Feature::class))
                     ->withPivot('value')
                     ->withTimestamps();
     }
