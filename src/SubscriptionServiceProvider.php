@@ -24,7 +24,7 @@ class SubscriptionServiceProvider extends ServiceProvider
         // Optionally publish config or views here
 
         $this->publishes([
-            __DIR__.'/Config/subscription.php' => config_path('subscription.php'),
+            __DIR__.'/config/subscription.php' => config_path('subscription.php'),
         ]);
     }
 
@@ -32,7 +32,7 @@ class SubscriptionServiceProvider extends ServiceProvider
     {
         // Register package services if needed
         $this->mergeConfigFrom(
-            __DIR__.'/Config/subscription.php', 'subscription'
+            __DIR__.'/config/subscription.php', 'subscription'
         );
     }
 }

@@ -2,7 +2,7 @@
  namespace NtechServices\SubscriptionSystem\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use NtechServices\SubscriptionSystem\Config\ConfigHelper;
+use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 use NtechServices\SubscriptionSystem\Models\Plan;
 use NtechServices\SubscriptionSystem\Models\PlanPrice;
 

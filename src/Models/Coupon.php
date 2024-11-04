@@ -3,7 +3,7 @@
 namespace NtechServices\SubscriptionSystem\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use NtechServices\SubscriptionSystem\Config\ConfigHelper;
+use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 
 class Coupon extends Model
 {

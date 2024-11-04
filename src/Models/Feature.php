@@ -5,7 +5,7 @@ namespace NtechServices\SubscriptionSystem\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use NtechServices\SubscriptionSystem\Config\ConfigHelper;
+use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 
 class Feature extends Model
 {

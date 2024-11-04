@@ -1,5 +1,5 @@
 <?php 
-namespace NtechServices\SubscriptionSystem\Config;
+namespace NtechServices\SubscriptionSystem\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
 
