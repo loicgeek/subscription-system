@@ -43,6 +43,9 @@ class MigrateSubscriptionSystem extends Command
                     $this->info("$fileName migrated successfully.\n");
                 }
                 } catch (\Throwable $th) {
+                    $this->error("Failed to migrate $fileName\n");
+                    $this->error($th->getMessage());
+                    $this->error("\n");
                     //throw $th;
                 }
             }
