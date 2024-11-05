@@ -16,6 +16,13 @@ class Feature extends Model
         'description',
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = ConfigHelper::getConfigTable('features','features');
+    }
+    
+
     /**
      * The plans that belong to the feature.
      */
