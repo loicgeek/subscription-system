@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create(ConfigHelper::getConfigTable('plans'), function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique()->after('name'); // Assuming 'name' is the previous column
+            $table->string('slug')->unique(); // Assuming 'name' is the previous column
             $table->text('description')->nullable();
             $table->integer('trial_value')->default(0); // Number of trial days or units
             $table->enum('trial_cycle', ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'])->default('monthly'); // Trial cycle
