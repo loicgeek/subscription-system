@@ -64,4 +64,14 @@ class PlanFeature extends Model
     {
         return $this->belongsTo(ConfigHelper::getConfigClass('plan', Plan::class));
     }
+
+     /**
+     * Get the plan that owns the price.
+     *
+     * @return BelongsTo
+     */
+    public function feature(): BelongsTo
+    {
+        return $this->belongsTo(ConfigHelper::getConfigClass('feature', Feature::class));
+    }
 }
