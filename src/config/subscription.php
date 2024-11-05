@@ -9,6 +9,7 @@ return [
     'tables' => [
         "prefix" => "ntech_",
         'plans' =>'plans',
+        "subscription_histories" => 'subscription_histories',
         'subscriptions' => 'subscriptions',
         'plan_prices' => 'plan_prices',
         'plan_feature' => 'plan_feature',
