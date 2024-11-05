@@ -14,7 +14,7 @@ class ConfigHelper
     public static function getConfigTable(string $key, $default = null)
     {
 
-        return  config(ConfigHelper::$configPrefix.".tables.{$key}", $default);
+        return  ConfigHelper::get("tables.prefix")."".config(ConfigHelper::$configPrefix.".tables.{$key}", $default);
     }
 
     public static function getConfigClass(string $key, $default = null): Model|string

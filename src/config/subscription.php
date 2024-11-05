@@ -7,6 +7,7 @@ return [
         'grace_cycle' => 'daily', // Example grace cycle
     ],
     'tables' => [
+        "prefix" => "ntech_",
         'plans' =>'plans',
         'subscriptions' => 'subscriptions',
         'plan_prices' => 'plan_prices',
