@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('subscribable_id'); 
             $table->string('subscribable_type'); 
             $table->unsignedBigInteger('plan_id')->references('id')->on(ConfigHelper::getConfigTable('plans'))->onDelete('cascade');
-            $table->foreignId('plan_price_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('plan_price_id')->references('id')->on(ConfigHelper::getConfigTable('plan_prices'))->onDelete('cascade');
             $table->date('start_date');
             $table->date('trial_ends_at')->nullable();
             $table->date('next_billing_date');
