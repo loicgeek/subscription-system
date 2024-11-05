@@ -85,7 +85,7 @@ class Plan extends Model
      */
     public function features(): BelongsToMany
     {
-        return $this->belongsToMany(ConfigHelper::getConfigClass('feature', Feature::class))
+        return $this->belongsToMany(ConfigHelper::getConfigClass('feature', Feature::class),ConfigHelper::getConfigTable('plan_feature'))
                     ->withPivot('value')
                     ->withTimestamps();
     }
