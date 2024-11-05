@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create(ConfigHelper::getConfigTable('plan_prices'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('plan_id')->constrained()->onDelete('cascade'); // Foreign key referencing plans table
+            $table->unsignedBigInteger('plan_id')->references('id')->on(ConfigHelper::getConfigTable('plans'))->onDelete('cascade'); // Foreign key referencing plans table
             $table->decimal('price', 10, 2); // Price for the plan
             $table->string('currency'); // Currency for the price
             $table->enum('billing_cycle', ['monthly', 'quarterly', 'yearly']); // Billing cycle

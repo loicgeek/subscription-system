@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create(ConfigHelper::getConfigTable('plan_feature'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('plan_id')->constrained()->onDelete('cascade'); // Foreign key referencing plans table
-            $table->foreignId('feature_id')->constrained()->onDelete('cascade'); // Foreign key referencing features table
+            $table->unsignedBigInteger('plan_id')->references('id')->on(ConfigHelper::getConfigTable('plans'))->onDelete('cascade'); // Foreign key referencing plans table
+            $table->unsignedBigInteger('feature_id')->references('id')->on(ConfigHelper::getConfigTable('features'))->onDelete('cascade'); // Foreign key referencing features table
             $table->string('value'); // Specific value for the feature associated with the plan
             $table->timestamps(); // Timestamps for created_at and updated_at
         });

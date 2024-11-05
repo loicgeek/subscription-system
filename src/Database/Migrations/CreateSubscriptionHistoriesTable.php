@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create(ConfigHelper::getConfigTable('subscription_histories','subscription_histories'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('subscription_id')->constrained()->onDelete('cascade');
-            $table->foreignId('plan_id')->constrained()->onDelete('cascade'); // Add this line
+            $table->unsignedBigInteger('subscription_id')->references('id')->on(ConfigHelper::getConfigTable('subscriptions'))->onDelete('cascade');
+            $table->unsignedBigInteger('plan_id')->references('id')->on(ConfigHelper::getConfigTable('plans'))->onDelete('cascade'); // Add this line
             $table->string('status');
             $table->text('details')->nullable();
             $table->timestamps();
