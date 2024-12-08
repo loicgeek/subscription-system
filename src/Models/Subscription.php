@@ -62,7 +62,7 @@ class Subscription extends Model
        /**
      * Get the subscriber (the user who created the subscription).
      */
-    public function subscriber(): MorphTo
+    public function subscribable(): MorphTo
     {
         return $this->morphTo('subscribable');
     }
