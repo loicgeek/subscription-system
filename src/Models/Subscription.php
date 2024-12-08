@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 use NtechServices\SubscriptionSystem\Enums\BillingCycle;
 use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
@@ -57,6 +58,14 @@ class Subscription extends Model
      * @var string $table The table associated with the model.
      */
     protected $table;
+
+       /**
+     * Get the subscriber (the user who created the subscription).
+     */
+    public function subscriber(): MorphTo
+    {
+        return $this->morphTo('subscribable');
+    }
 
     /**
      * Subscription constructor.
