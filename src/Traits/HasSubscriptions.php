@@ -15,11 +15,6 @@ use NtechServices\SubscriptionSystem\Models\Coupon;
 
 trait HasSubscriptions
 {
-    public function subscriptions() : MorphMany
-    {
-        return $this->morphMany(ConfigHelper::getConfigClass('subscriptions',Subscription::class), 'subscribable');
-    }
-
     public function activeSubscriptions():Collection
     {
         return $this->subscriptions()
@@ -32,7 +27,12 @@ trait HasSubscriptions
             ->whereIn('status', [SubscriptionStatus::PENDING->value])
             ->get();
     }
-    public function subscribeToPlan(PlanPrice $planPrice, string $couponCode = null)
+    public function subscriptions() : MorphMany
+    {
+        return $this->morphMany(ConfigHelper::getConfigClass('subscriptions',Subscription::class), 'subscribable');
+    }
+
+    public function subscribeToPlan(PlanPrice $planPrice, ?string $couponCode = null)
     {
         // Read grace period configuration
         $graceValue = ConfigHelper::get('default.grace_value'); // Grace value as a numerical value
@@ -57,9 +57,6 @@ trait HasSubscriptions
             'grace_cycle' => $graceCycle, // Read grace cycle from config
             'coupon_id' => $couponId, // Save the coupon ID used for this subscription
         ]);
-
-
-
         return $subscription;
     }
     protected function applyCoupon(?string $couponCode, PlanPrice $price, ?int &$couponId): float

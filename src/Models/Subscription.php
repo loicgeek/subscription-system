@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 use NtechServices\SubscriptionSystem\Enums\BillingCycle;
 use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
+use NtechServices\SubscriptionSystem\Services\FeatureLimitationService;
 
 /**
  * Class Subscription
@@ -29,6 +30,7 @@ use NtechServices\SubscriptionSystem\Enums\SubscriptionStatus;
  * @property string $status
  * @property int|null $grace_value
  * @property string|null $grace_cycle
+ * @property float|null $prorated_amount
  * @property int|null $coupon_id
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -51,6 +53,7 @@ class Subscription extends Model
         'status',
         'grace_value',
         'grace_cycle',
+        'prorated_amount',
         'coupon_id',
     ];
 
@@ -59,7 +62,7 @@ class Subscription extends Model
      */
     protected $table;
 
-       /**
+    /**
      * Get the subscriber (the user who created the subscription).
      */
     public function subscribable(): MorphTo
@@ -117,7 +120,27 @@ class Subscription extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(ConfigHelper::getConfigClass('subscription_history', SubscriptionHistory::class) );
+        return $this->hasMany(ConfigHelper::getConfigClass('subscription_history', SubscriptionHistory::class));
+    }
+
+    /**
+     * Get features associated with the subscription's plan.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function features()
+    {
+        $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        
+        return $this->hasManyThrough(
+            $featureClass,
+            $planFeatureClass,
+            'plan_id', // Foreign key on plan_feature table
+            'id', // Foreign key on features table
+            'plan_id', // Local key on subscriptions table
+            'feature_id' // Local key on plan_feature table
+        );
     }
 
     /**
@@ -137,7 +160,26 @@ class Subscription extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === SubscriptionStatus::ACTIVE->value && !$this->isExpired();
+        // Check if status is active
+        if ($this->status !== SubscriptionStatus::ACTIVE->value) {
+            return false;
+        }
+        
+        // Check if in trial period
+        if ($this->trial_ends_at && Carbon::now()->isBefore($this->trial_ends_at)) {
+            return true;
+        }
+        
+        // Check if subscription has expired
+        if ($this->isExpired()) {
+            // Check if in grace period
+            if ($this->isSubscriptionInGracePeriod()) {
+                return true;
+            }
+            return false;
+        }
+        
+        return true;
     }
 
     /**
@@ -163,7 +205,36 @@ class Subscription extends Model
             $this->amount_due = $this->calculateAmountDue();
             $this->status = SubscriptionStatus::ACTIVE->value;
             $this->save();
+            
+            // Record renewal in history
+            $this->recordHistory($this->status, 'Subscription renewed.');
         }
+    }
+
+    /**
+     * Calculate amount due, taking into account any coupon discounts
+     * 
+     * @return float
+     */
+    protected function calculateAmountDue(): float
+    {
+        $price = $this->planPrice->price;
+        
+        // Apply coupon discount if present
+        if ($this->coupon_id) {
+            $coupon = $this->coupon;
+            
+            // Check if coupon is still valid
+            if (!$coupon->expires_at || Carbon::now()->isBefore($coupon->expires_at)) {
+                if ($coupon->discount_type === 'percentage') {
+                    $price = $price * (1 - ($coupon->discount_amount / 100));
+                } else { // fixed amount
+                    $price = max(0, $price - $coupon->discount_amount);
+                }
+            }
+        }
+        
+        return $price;
     }
 
     /**
@@ -176,6 +247,9 @@ class Subscription extends Model
         $daysToAdd = $this->calculateGracePeriodDays();
         $this->next_billing_date = Carbon::now()->addDays($daysToAdd);
         $this->save();
+        
+        // Record grace period in history
+        $this->recordHistory($this->status, "Entered grace period for {$daysToAdd} days.");
     }
 
     /**
@@ -229,6 +303,14 @@ class Subscription extends Model
                 $originalStatus = $subscription->getOriginal('status');
                 $newStatus = $subscription->status;
                 $subscription->recordHistory($newStatus, "Status changed from {$originalStatus} to {$newStatus}.");
+            } elseif ($subscription->isDirty('plan_id')) {
+                $originalPlanId = $subscription->getOriginal('plan_id');
+                $newPlanId = $subscription->plan_id;
+                $subscription->recordHistory($subscription->status, "Plan changed from ID {$originalPlanId} to ID {$newPlanId}.");
+            } elseif ($subscription->isDirty('plan_price_id')) {
+                $originalPlanPriceId = $subscription->getOriginal('plan_price_id');
+                $newPlanPriceId = $subscription->plan_price_id;
+                $subscription->recordHistory($subscription->status, "Plan price changed from ID {$originalPlanPriceId} to ID {$newPlanPriceId}.");
             }
         });
 
@@ -237,16 +319,17 @@ class Subscription extends Model
         });
     }
 
-
-
-
-    function startBilling()
+    /**
+     * Start billing for the subscription
+     * 
+     * @return void
+     */
+    public function startBilling(): void
     {
-       
         $planPrice = $this->planPrice;
-            // Read trial value and cycle from the plan
-        $trialValue = $planPrice->trial_value; // Number of trial days or units
-        $trialCycle = $planPrice->trial_cycle; // Trial cycle
+        // Read trial value and cycle from the plan
+        $trialValue = $this->plan->trial_value; // Number of trial days or units
+        $trialCycle = $this->plan->trial_cycle; // Trial cycle
 
         // Handle trial period
         $trialEndsAt = null;
@@ -271,19 +354,23 @@ class Subscription extends Model
         }
 
         $this->trial_ends_at = $trialEndsAt; 
-        $this->next_billing_date  = $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle));
-        $this->status = SubscriptionStatus::ACTIVE->value;
+        $this->next_billing_date = $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle));
+        $this->status = $trialEndsAt ? SubscriptionStatus::TRIALING->value : SubscriptionStatus::ACTIVE->value;
         $this->save();
-        
     }
     
-
-    public function updateSubscription(PlanPrice $newPrice)
+    /**
+     * Update subscription to a new plan/price
+     * 
+     * @param PlanPrice $newPrice
+     * @return void
+     */
+    public function updateSubscription(PlanPrice $newPrice): void
     {
         // Calculate the prorated amount only if enabled in config
         $proratedAmount = ConfigHelper::get('default.enable_prorated_billing')
-        ? $this->calculateProratedAmount($this)
-        : 0; // Set to 0 if prorated billing is disabled
+            ? $this->calculateProratedAmount()
+            : 0; // Set to 0 if prorated billing is disabled
 
         // Update the subscription with the new plan and prorated amount
         $this->update([
@@ -295,6 +382,11 @@ class Subscription extends Model
         ]);
     }
 
+    /**
+     * Calculate prorated amount for plan changes
+     * 
+     * @return float
+     */
     protected function calculateProratedAmount(): float
     {
         // Get the remaining time in the current billing cycle
@@ -307,6 +399,12 @@ class Subscription extends Model
         return $dailyRate * $remainingDays;
     }
 
+    /**
+     * Get number of days in billing cycle
+     * 
+     * @param int $planPriceId
+     * @return int
+     */
     protected function daysInBillingCycle(int $planPriceId): int
     {
         // Assuming monthly billing cycles have 30 days
@@ -321,24 +419,44 @@ class Subscription extends Model
         };
     }
 
-    public function cancelSubscription(bool $softCancel = true)
+    /**
+     * Cancel a subscription
+     * 
+     * @param bool $softCancel Whether to soft cancel or hard delete
+     * @return void
+     */
+    public function cancelSubscription(bool $softCancel = true): void
     {
         if ($softCancel) {
             $this->update(['status' => SubscriptionStatus::CANCELED->value]);
+            $this->recordHistory(SubscriptionStatus::CANCELED->value, 'Subscription was canceled.');
         } else {
+            // Record history before deleting
+            $this->recordHistory(SubscriptionStatus::CANCELED->value, 'Subscription was hard deleted.');
             $this->delete(); // Hard delete if not soft canceling
         }
     }
 
-    public function sendBillingReminder()
+    /**
+     * Send billing reminder
+     * 
+     * @return void
+     */
+    public function sendBillingReminder(): void
     {
-
         if ($this->next_billing_date->isToday()) {
-           
+            // Implementation for sending reminders via email or notifications
+            // This would typically integrate with your notification system
         }
     }
 
-    protected function calculateNextBillingDate(BillingCycle $billingCycle)
+    /**
+     * Calculate next billing date based on billing cycle
+     * 
+     * @param BillingCycle $billingCycle
+     * @return Carbon
+     */
+    protected function calculateNextBillingDate(BillingCycle $billingCycle): Carbon
     {
         return match ($billingCycle) {
             BillingCycle::DAILY => Carbon::now()->addDay(),
@@ -349,24 +467,156 @@ class Subscription extends Model
         };
     }
 
+    /**
+     * Check if subscription is in grace period
+     * 
+     * @return bool
+     */
     public function isSubscriptionInGracePeriod(): bool
     {
+        // If no grace period is defined, return false
+        if (!$this->grace_value || !$this->grace_cycle) {
+            return false;
+        }
 
-        // Calculate grace period based on grace value and cycle
-        $graceValue = $this->grace_value; // Read from subscription
-        $graceCycle = $this->grace_cycle; // Read from subscription
-        
         // Determine how many days to add based on grace cycle
-        $daysToAdd = match ($graceCycle) {
-            'daily' => $graceValue,
-            'weekly' => $graceValue * 7,
-            'monthly' => $graceValue * 30,
-            'quarterly' => $graceValue * 90,
-            'yearly' => $graceValue * 365,
+        $daysToAdd = match ($this->grace_cycle) {
+            'daily' => $this->grace_value,
+            'weekly' => $this->grace_value * 7,
+            'monthly' => $this->grace_value * 30,
+            'quarterly' => $this->grace_value * 90,
+            'yearly' => $this->grace_value * 365,
             default => 0,
         };
 
         $endOfGracePeriod = Carbon::parse($this->next_billing_date)->addDays($daysToAdd);
         return Carbon::now()->isBefore($endOfGracePeriod);
+    }
+
+    /**
+     * Check if the subscription has access to a specific feature
+     * 
+     * @param string $featureName
+     * @return bool
+     */
+    public function hasFeature(string $featureName): bool
+    {
+        // If subscription is not active, no features are available
+        if (!$this->isActive()) {
+            return false;
+        }
+        
+        return app(FeatureLimitationService::class)->hasFeature($this, $featureName);
+    }
+
+    /**
+     * Get the value of a specific feature for this subscription
+     * 
+     * @param string $featureName
+     * @return string|null
+     */
+    public function getFeatureValue(string $featureName): ?string
+    {
+        // If subscription is not active, no features are available
+        if (!$this->isActive()) {
+            return null;
+        }
+        
+        return app(FeatureLimitationService::class)->getFeatureValue($this, $featureName);
+    }
+
+    /**
+     * Check if the subscription has a feature with a specific value
+     * 
+     * @param string $featureName
+     * @param mixed $requiredValue
+     * @return bool
+     */
+    public function hasFeatureWithValue(string $featureName, $requiredValue): bool
+    {
+        // If subscription is not active, no features are available
+        if (!$this->isActive()) {
+            return false;
+        }
+        
+        return app(FeatureLimitationService::class)->hasFeatureWithValue($this, $featureName, $requiredValue);
+    }
+
+    /**
+     * Check if the subscription has reached the limit for a specific feature
+     * 
+     * @param string $featureName
+     * @param int $currentUsage
+     * @return bool
+     */
+    public function hasReachedLimit(string $featureName, int $currentUsage): bool
+    {
+        // If subscription is not active, all limits are reached
+        if (!$this->isActive()) {
+            return true;
+        }
+        
+        return app(FeatureLimitationService::class)->hasReachedLimit($this, $featureName, $currentUsage);
+    }
+
+    /**
+     * Get all available features for this subscription
+     * 
+     * @return array
+     */
+    public function getAvailableFeatures(): array
+    {
+        // If subscription is not active, no features are available
+        if (!$this->isActive()) {
+            return [];
+        }
+        
+        return app(FeatureLimitationService::class)->getAvailableFeatures($this);
+    }
+
+    /**
+     * Scope a query to only include active subscriptions.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', SubscriptionStatus::ACTIVE->value)
+            ->where(function ($query) {
+                $query->where('next_billing_date', '>=', Carbon::now())
+                    ->orWhere(function ($query) {
+                        $query->whereNotNull('trial_ends_at')
+                            ->where('trial_ends_at', '>=', Carbon::now());
+                    });
+            });
+    }
+
+    /**
+     * Scope a query to only include expired subscriptions.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeExpired($query)
+    {
+        return $query->where('status', SubscriptionStatus::ACTIVE->value)
+            ->where('next_billing_date', '<', Carbon::now())
+            ->where(function ($query) {
+                $query->whereNull('trial_ends_at')
+                    ->orWhere('trial_ends_at', '<', Carbon::now());
+            });
+    }
+
+    /**
+     * Scope a query to only include trialing subscriptions.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeTrialing($query)
+    {
+        return $query->where('status', SubscriptionStatus::TRIALING->value)
+            ->where('trial_ends_at', '>=', Carbon::now());
     }
 }
