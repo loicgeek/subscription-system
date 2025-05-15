@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create(ConfigHelper::getConfigTable('subscriptions'), function (Blueprint $table) {
             $table->id();
-            $table->integer('subscribable_id'); 
+            $table->string('subscribable_id'); 
             $table->string('subscribable_type'); 
             $table->unsignedBigInteger('plan_id')->references('id')->on(ConfigHelper::getConfigTable('plans'))->onDelete('cascade');
             $table->unsignedBigInteger('plan_price_id')->references('id')->on(ConfigHelper::getConfigTable('plan_prices'))->onDelete('cascade');
