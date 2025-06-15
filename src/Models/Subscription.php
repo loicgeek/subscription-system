@@ -549,14 +549,14 @@ class Subscription extends Model
      * @param int $currentUsage
      * @return bool
      */
-    public function hasReachedLimit(string $featureName, int $currentUsage): bool
+    public function hasReachedLimit(string $featureName): bool
     {
         // If subscription is not active, all limits are reached
         if (!$this->isActive()) {
             return true;
         }
         
-        return app(FeatureLimitationService::class)->hasReachedLimit($this, $featureName, $currentUsage);
+        return app(FeatureLimitationService::class)->hasReachedLimit($this, $featureName);
     }
 
     /**
