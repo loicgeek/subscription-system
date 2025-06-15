@@ -128,7 +128,7 @@ class FeatureLimitationService
         $feature = $featureClass::where('name', $featureName)->first();
 
         $used = ConfigHelper::getConfigClass("subscription_feature_usage",SubscriptionFeatureUsage::class)
-            ->where('subscription_id', $subscription->id)
+            ::where('subscription_id', $subscription->id)
             ->where('feature_id', $feature->id)
             ->value('used') ?? 0;
 
