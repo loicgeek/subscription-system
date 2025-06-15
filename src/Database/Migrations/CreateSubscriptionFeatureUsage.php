@@ -14,8 +14,14 @@ return new class extends Migration
     {
         Schema::create(ConfigHelper::getConfigTable('subscription_feature_usage'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('subscription_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('feature_id')->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('subscription_id')
+                ->references('id')
+                ->on(ConfigHelper::getConfigTable('subscriptions'))
+                ->onDelete('cascade'); // Foreign key referencing subscriptions table
+            $table->unsignedBigInteger('feature_id')
+                ->references('id')
+                ->on(ConfigHelper::getConfigTable('features'))
+                ->onDelete('cascade'); // Foreign key referencing features table
             $table->unsignedInteger('used')->default(0);
             $table->timestamp('reset_at')->nullable();
             $table->timestamps();
