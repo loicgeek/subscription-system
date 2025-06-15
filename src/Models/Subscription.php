@@ -546,7 +546,6 @@ class Subscription extends Model
      * Check if the subscription has reached the limit for a specific feature
      * 
      * @param string $featureName
-     * @param int $currentUsage
      * @return bool
      */
     public function hasReachedLimit(string $featureName): bool
