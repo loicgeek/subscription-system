@@ -619,4 +619,8 @@ class Subscription extends Model
         return $query->where('status', SubscriptionStatus::TRIALING->value)
             ->where('trial_ends_at', '>=', Carbon::now());
     }
+    public function incrementUsage(string $featureName, int $amount = 1): void
+    {
+        app(FeatureLimitationService::class)->incrementUsage($this, $featureName, $amount);
+    }
 }

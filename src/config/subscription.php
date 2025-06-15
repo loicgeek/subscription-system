@@ -15,6 +15,7 @@ return [
         'plan_feature' => 'plan_feature',
         'features' => 'features',
         'coupons' => 'coupons',
+        'subscription_feature_usage' => 'subscription_feature_usages',
     ],
     'models'=>[
         'feature' => NtechServices\SubscriptionSystem\Models\Feature::class,
@@ -22,7 +23,8 @@ return [
         'subscription' => NtechServices\SubscriptionSystem\Models\Subscription::class,
         'plan_price' => NtechServices\SubscriptionSystem\Models\PlanPrice::class,
         'coupon' => NtechServices\SubscriptionSystem\Models\Coupon::class,
-        'subscription_history' => NtechServices\SubscriptionSystem\Models\SubscriptionHistory::class
+        'subscription_history' => NtechServices\SubscriptionSystem\Models\SubscriptionHistory::class,
+        'subscription_feature_usage' => NtechServices\SubscriptionSystem\Models\SubscriptionFeatureUsage::class,
     ],
 
 ];

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 use NtechServices\SubscriptionSystem\Database\Factories\PlanPriceFactory;
-use PSpell\Config;
+
 
 /**
  * Class PlanPrice

@@ -7,6 +7,7 @@ use NtechServices\SubscriptionSystem\Models\Feature;
 use NtechServices\SubscriptionSystem\Models\PlanFeature;
 use NtechServices\SubscriptionSystem\Models\Subscription;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
+use NtechServices\SubscriptionSystem\Models\SubscriptionFeatureUsage;
 
 class FeatureLimitationService
 {
@@ -89,7 +90,7 @@ class FeatureLimitationService
         }
         
         // Handle different types of feature values
-        if ($featureValue === 'unlimited') {
+        if ($featureValue === 'unlimited' || $featureValue === '-1' || $featureValue === -1) {
             return true;
         }
         
@@ -115,30 +116,23 @@ class FeatureLimitationService
      * @param int $currentUsage
      * @return bool
      */
-    public function hasReachedLimit(Subscription $subscription, string $featureName, int $currentUsage): bool
+
+
+    public function hasReachedLimit(Subscription $subscription, string $featureName): bool
     {
         $featureValue = $this->getFeatureValue($subscription, $featureName);
-        
-        if ($featureValue === null) {
-            return true; // If the feature doesn't exist, limit is reached
-        }
-        
-        // If the feature is unlimited
-        if ($featureValue === 'unlimited') {
-            return false;
-        }
-        
-        // For numeric features
-        if (is_numeric($featureValue)) {
-            return $currentUsage >= (int)$featureValue;
-        }
-        
-        // For boolean features
-        if (in_array(strtolower($featureValue), ['false', 'no', '0', 'off'])) {
-            return true;
-        }
-        
-        return false;
+        if ($featureValue === null) return true;
+        if ($featureValue === 'unlimited' || $featureValue === '-1' || $featureValue === -1) return false;
+
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        $feature = $featureClass::where('name', $featureName)->first();
+
+        $used = ConfigHelper::getConfigClass("subscription_feature_usage",SubscriptionFeatureUsage::class)
+            ->where('subscription_id', $subscription->id)
+            ->where('feature_id', $feature->id)
+            ->value('used') ?? 0;
+
+        return (int)$used >= (int)$featureValue;
     }
 
     /**
@@ -170,4 +164,39 @@ class FeatureLimitationService
         
         return $features;
     }
+
+    public function incrementUsage(Subscription $subscription, string $featureName, int $amount = 1): void
+    {
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        $feature = $featureClass::where('name', $featureName)->firstOrFail();
+
+        $usage = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class)::firstOrCreate([
+            'subscription_id' => $subscription->id,
+            'feature_id' => $feature->id,
+        ],
+        [
+            'used' => 0,
+            'reset_at' => $subscription->next_billing_date, // Default reset cycle
+        ]);
+
+        $usage->increment('used', $amount);
+    }
+    
+    public function getFeatureUsage(Subscription $subscription, string $featureName): int
+    {
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        $feature = $featureClass::where('name', $featureName)->firstOrFail();
+
+        $usage = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class)::firstOrCreate([
+            'subscription_id' => $subscription->id,
+            'feature_id' => $feature->id,
+        ]);
+        if($usage === null){
+            return 0;
+        }
+
+        return $usage->used;
+    }
+    
+    
 }
