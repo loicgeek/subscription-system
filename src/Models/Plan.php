@@ -73,7 +73,7 @@ class Plan extends Model
      */
     public function planPrices(): HasMany
     {
-        return $this->hasMany(ConfigHelper::getConfigClass('plan_price', Feature::class));
+        return $this->hasMany(ConfigHelper::getConfigClass('plan_price', PlanPrice::class));
     }
 
     /**

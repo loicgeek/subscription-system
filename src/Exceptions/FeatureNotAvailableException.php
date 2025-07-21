@@ -14,4 +14,12 @@ class FeatureNotAvailableException extends Exception
         $message = "Feature '{$featureName}' is not available in subscription plan '{$subscription->plan->name}'";
         parent::__construct($message, 403); // HTTP 403 Forbidden
     }
+
+    public function render($request){
+        return response()->json([
+            "message" => $this->message,
+            "feature_name"=>$this->featureName,
+            "plan_name" => $this->subscription->plan->name,
+        ],403);
+    }
 }
