@@ -354,6 +354,7 @@ class Subscription extends Model
             }
         }
 
+        $this->start_date = Carbon::now();
         $this->trial_ends_at = $trialEndsAt; 
         $this->next_billing_date = $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle));
         $this->status = $trialEndsAt ? SubscriptionStatus::TRIALING->value : SubscriptionStatus::ACTIVE->value;
@@ -623,6 +624,21 @@ class Subscription extends Model
     {
         app(FeatureLimitationService::class)->incrementUsage($this, $featureName, $amount);
     }
+
+    /**
+ * Update billing dates after successful payment
+ */
+public function updateBillingDates(): void
+{
+    $this->last_billing_date = $this->next_billing_date;
+    $this->next_billing_date = $this->calculateNextBillingDate(
+        BillingCycle::from($this->planPrice->billing_cycle)
+    );
+    $this->save();
+}
+
+
+
 
     public function featureUsages()
     {
