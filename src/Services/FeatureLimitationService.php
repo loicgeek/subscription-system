@@ -20,6 +20,10 @@ class FeatureLimitationService
      */
     public function hasFeature(Subscription $subscription, string $featureName): bool
     {
+        // Check if subscription is active
+        if (!$subscription->isActive()) {
+            return false;
+        }
         // Get the feature by name
         $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
         $feature = $featureClass::where('name', $featureName)->first();
@@ -28,10 +32,7 @@ class FeatureLimitationService
             return false;
         }
         
-        // Check if subscription is active
-        if (!$subscription->isActive()) {
-            return false;
-        }
+        
         
         // Check if the plan has this feature
         $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);

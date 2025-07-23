@@ -625,4 +625,9 @@ class Subscription extends Model
     {
         app(FeatureLimitationService::class)->incrementUsage($this, $featureName, $amount);
     }
+
+    public function featureUsages()
+    {
+        return $this->hasMany(ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class));
+    }
 }
