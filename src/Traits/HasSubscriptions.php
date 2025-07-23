@@ -42,6 +42,7 @@ trait HasSubscriptions
         $discountAmount = $this->applyCoupon($couponCode, $planPrice, $couponId);
 
         // Create the new subscription
+        $amountDue = max(0, $planPrice->price - $discountAmount); // Ensure amount due is not negative
         $subscription = $this->subscriptions()->updateOrCreate([
             "subscribable_id" => $this->getKey(),
             "subscribable_type" => get_class($this),
@@ -50,9 +51,9 @@ trait HasSubscriptions
             'plan_price_id' => $planPrice->id,
             'start_date' => Carbon::now(),
             'next_billing_date' => $this->calculateNextBillingDate(BillingCycle::from($planPrice->billing_cycle)),
-            'amount_due' => max(0, $planPrice->price - $discountAmount), // Ensure amount due is not negative
+            'amount_due' => $amountDue,
             'currency' => $planPrice->currency,
-            'status' => SubscriptionStatus::PENDING->value,
+            'status' =>$amountDue > 0 ? SubscriptionStatus::PENDING->value : SubscriptionStatus::ACTIVE->value,
             'grace_value' => $graceValue, // Read grace value from config
             'grace_cycle' => $graceCycle, // Read grace cycle from config
             'coupon_id' => $couponId, // Save the coupon ID used for this subscription
