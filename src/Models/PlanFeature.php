@@ -4,7 +4,7 @@ namespace NtechServices\SubscriptionSystem\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 
 
@@ -22,7 +22,7 @@ use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
-class PlanFeature extends Model
+class PlanFeature extends Pivot
 {
 
 
