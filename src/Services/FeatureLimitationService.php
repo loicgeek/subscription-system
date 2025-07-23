@@ -219,6 +219,7 @@ class FeatureLimitationService
         if ($this->shouldResetUsage($subscription, $usage)) {
             $usage->used = 0;  // ← Resets existing record
             $usage->reset_at = $nextPeriodStart;
+            $usage->save();
         }
 
         return $usage;
