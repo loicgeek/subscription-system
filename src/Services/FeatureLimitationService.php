@@ -204,28 +204,55 @@ class FeatureLimitationService
     private function getOrCreateCurrentPeriodUsage(Subscription $subscription, $feature)
     {
         $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
-        $currentPeriodStart = $this->getCurrentPeriodStart($subscription);
         $nextPeriodStart = $this->getNextPeriodStart($subscription);
 
-        // Try to find existing usage for current period
-        $usage = $usageClass::where('subscription_id', $subscription->id)
-            ->where('feature_id', $feature->id)
-            ->where('created_at', '>=', $currentPeriodStart)
-            ->where('reset_at', $nextPeriodStart)
-            ->first();
+        // REUSES the same record, just resets the values
+        $usage = $usageClass::firstOrCreate([
+            'subscription_id' => $subscription->id,
+            'feature_id' => $feature->id,  // ← Always same record due to unique constraint
+        ], [
+            'used' => 0,
+            'reset_at' => $nextPeriodStart,
+        ]);
 
-        // If no usage found or it's from a previous period, create new one
-        if (!$usage) {
-            $usage = $usageClass::create([
-                'subscription_id' => $subscription->id,
-                'feature_id' => $feature->id,
-                'used' => 0,
-                'reset_at' => $nextPeriodStart,
-            ]);
+        // Then checks if reset is needed
+        if ($this->shouldResetUsage($subscription, $usage)) {
+            $usage->used = 0;  // ← Resets existing record
+            $usage->reset_at = $nextPeriodStart;
         }
 
         return $usage;
     }
+    /**
+     * Check if usage should be reset based on billing period
+     *
+     * @param Subscription $subscription
+     * @param SubscriptionFeatureUsage $usage
+     * @return bool
+     */
+    private function shouldResetUsage(Subscription $subscription, SubscriptionFeatureUsage $usage): bool
+    {
+        // If no reset_at date, assume it needs reset
+        if (!$usage->reset_at) {
+            return true;
+        }
+        
+        $resetDate = Carbon::parse($usage->reset_at);
+        $now = Carbon::now();
+        
+        // If current time is past the reset date, we need to reset
+        if ($now->isAfter($resetDate)) {
+            return true;
+        }
+        
+        // Check if subscription next_billing_date has changed significantly
+        $nextBilling = Carbon::parse($subscription->next_billing_date);
+        $timeDiff = abs($resetDate->diffInHours($nextBilling));
+        
+        // If there's more than 24 hours difference, assume billing date changed
+        return $timeDiff > 24;
+    }
+    
     
     /**
      * Get the start date of the current billing period
@@ -304,26 +331,6 @@ class FeatureLimitationService
         };
     }
     
-    /**
-     * Reset usage for a specific feature (useful for manual resets)
-     *
-     * @param Subscription $subscription
-     * @param string $featureName
-     * @return void
-     */
-    public function resetFeatureUsage(Subscription $subscription, string $featureName): void
-    {
-        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
-        $feature = $featureClass::where('name', $featureName)->first();
-        
-        if (!$feature) {
-            return;
-        }
-        
-        $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
-        $usage = $this->getOrCreateCurrentPeriodUsage($subscription, $feature);
-        $usage->update(['used' => 0]);
-    }
     
     /**
      * Get detailed usage information for a feature
@@ -350,6 +357,8 @@ class FeatureLimitationService
             'next_reset_date' => $this->getNextPeriodStart($subscription)->toDateTimeString(),
         ];
     }
+
+    
     
     
 }
