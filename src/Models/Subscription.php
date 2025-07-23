@@ -281,8 +281,6 @@ class Subscription extends Model
         $this->history()->create([
             "plan_price_id" => $this->plan_price_id,
             "plan_id" => $this->plan_id,
-            "subscribable_id" => $this->subscribable_id,
-            "subscribable_type" => $this->subscribable_type,
             "status" => $status,
             "details" => $details,
         ]);
