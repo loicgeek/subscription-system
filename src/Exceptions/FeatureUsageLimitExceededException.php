@@ -5,6 +5,7 @@ namespace NtechServices\SubscriptionSystem\Exceptions;
 use Exception;
 use NtechServices\SubscriptionSystem\Models\Subscription;
 use NtechServices\SubscriptionSystem\Models\Feature;
+use NtechServices\SubscriptionSystem\Services\FeatureLimitationService;
 
 class FeatureUsageLimitExceededException extends Exception
 {
@@ -40,5 +41,10 @@ class FeatureUsageLimitExceededException extends Exception
     public function getExcessUsage(): int
     {
         return max(0, ($this->currentUsage + $this->attemptedUsage) - $this->limit);
+    }
+    
+    public function render($request){
+        $details = app(FeatureLimitationService::class)->getFeatureUsageDetails($this->subscription, $this->feature->name);
+        return response()->json($details,429);
     }
 }
