@@ -279,9 +279,12 @@ class Subscription extends Model
     protected function recordHistory(string $status, ?string $details = null): void
     {
         $this->history()->create([
-            'plan_id' => $this->plan_id,
-            'status' => $status,
-            'details' => $details,
+            "plan_price_id" => $this->plan_price_id,
+            "plan_id" => $this->plan_id,
+            "subscribable_id" => $this->subscribable_id,
+            "subscribable_type" => $this->subscribable_type,
+            "status" => $status,
+            "details" => $details,
         ]);
     }
 
