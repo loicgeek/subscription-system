@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('used')->default(0);
             $table->timestamp('reset_at')->nullable();
             $table->timestamps();
-            $table->unique(['subscription_id', 'feature_id']);
+            $table->unique(['subscription_id', 'feature_id'], 'subs_feat_unique');
         });
     }
 
