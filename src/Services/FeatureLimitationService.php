@@ -261,7 +261,7 @@ class FeatureLimitationService
      * @param Subscription $subscription
      * @return Carbon
      */
-    private function getCurrentPeriodStart(Subscription $subscription): Carbon
+     function getCurrentPeriodStart(Subscription $subscription): Carbon
     {
         $now = Carbon::now();
         $subscriptionStart = Carbon::parse($subscription->start_date ?? $subscription->created_at);
