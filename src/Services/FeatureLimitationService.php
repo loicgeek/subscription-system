@@ -62,9 +62,9 @@ class FeatureLimitationService
         }
         
         // Check if subscription is active
-        if (!$subscription->isActive()) {
-            return null;
-        }
+        // if (!$subscription->isActive()) {
+        //     return null;
+        // }
         
         // Get the feature value from plan_feature
         $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);
