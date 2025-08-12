@@ -168,9 +168,6 @@ class FeatureLimitationService
      */
     public function getAvailableFeatures(Subscription $subscription): array
     {
-        if (!$subscription->isActive()) {
-            return [];
-        }
         
         $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);
         $planFeatures = $planFeatureClass::where('plan_id', $subscription->plan_id)
