@@ -87,7 +87,7 @@ class Plan extends Model
     {
         return $this->belongsToMany(ConfigHelper::getConfigClass('feature', Feature::class),
         ConfigHelper::getConfigTable('plan_feature'))
-                    ->withPivot('value')
+                    ->withPivot(['value', 'is_soft_limit', 'overage_price', 'overage_currency'])
                     ->withTimestamps();
     }
 }
