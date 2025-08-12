@@ -1,5 +1,5 @@
 {
-    "version": "0.0.7",
+    "version": "0.0.8",
     "name": "ntech-services/subscription-system",
     "description": "A subscription management system for Laravel applications.",
     "type": "library",

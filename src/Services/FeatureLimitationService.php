@@ -74,6 +74,32 @@ class FeatureLimitationService
             
         return $planFeature ? $planFeature->value : null;
     }
+
+        /**
+     * Get the value of a feature for a subscription
+     *
+     * @param Subscription $subscription
+     * @param string $featureName
+     * @return bool 
+     */
+    public function hasSoftLimitOnFeature(Subscription $subscription, string $featureName): bool
+    {
+        // Get the feature by name
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        $feature = $featureClass::where('name', $featureName)->first();
+        
+        if (!$feature) {
+            return false;
+        }
+        
+        // Get the feature value from plan_feature
+        $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);
+        $planFeature = $planFeatureClass::where('plan_id', $subscription->plan_id)
+            ->where('feature_id', $feature->id)
+            ->first();
+            
+        return $planFeature && $planFeature->is_soft_limit;
+    }
     
     /**
      * Check if a subscription has access to a feature with a specific value
@@ -171,8 +197,14 @@ class FeatureLimitationService
         $feature = $featureClass::where('name', $featureName)->firstOrFail();
 
         $usage = $this->getOrCreateCurrentPeriodUsage($subscription, $feature);
+        
+        if($this->hasReachedLimit($subscription, $featureName) && $this->hasSoftLimitOnFeature($subscription, $featureName)) {
+            $usage->increment('overage_count', $amount);
+            return;
+        }
+        
         $usage->increment('used', $amount);
-    }
+    }   
     
     /**
      * Get feature usage for the current subscription period
@@ -205,23 +237,20 @@ class FeatureLimitationService
     {
         $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
         $nextPeriodStart = $this->getNextPeriodStart($subscription);
+        $currentPeriodStart = $this->getCurrentPeriodStart($subscription);
 
+        
         // REUSES the same record, just resets the values
         $usage = $usageClass::firstOrCreate([
             'subscription_id' => $subscription->id,
             'feature_id' => $feature->id,  // ← Always same record due to unique constraint
+            'period_start'    => $currentPeriodStart,
+            'period_end'      => $nextPeriodStart,
         ], [
             'used' => 0,
+            'overage_count' => 0,
             'reset_at' => $nextPeriodStart,
         ]);
-
-        // Then checks if reset is needed
-        if ($this->shouldResetUsage($subscription, $usage)) {
-            $usage->used = 0;  // ← Resets existing record
-            $usage->reset_at = $nextPeriodStart;
-            $usage->save();
-        }
-
         return $usage;
     }
     /**

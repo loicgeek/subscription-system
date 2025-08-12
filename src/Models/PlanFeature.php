@@ -16,9 +16,11 @@ use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
  *
  * @property int $id
  * @property int $plan_id
- * @property float $price
- * @property string $currency
- * @property string $billing_cycle
+ * @property int $feature_id
+ * @property string $value
+ * @property bool $is_soft_limit
+ * @property int $overage_price
+ * @property string $overage_currency
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -33,6 +35,15 @@ class PlanFeature extends Pivot
         'plan_id',
         'feature_id',
         'value',
+        'is_soft_limit',
+        'overage_price',
+        'overage_currency',
+    ];
+
+    protected $casts = [
+        'is_hard_limit' => 'boolean',
+        'overage_price' => 'integer',
+        'overage_currency' => 'string',
     ];
 
     /**

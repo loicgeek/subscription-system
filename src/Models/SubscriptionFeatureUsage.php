@@ -28,7 +28,7 @@ use NtechServices\SubscriptionSystem\Database\Factories\PlanFactory;
  class SubscriptionFeatureUsage extends Model
  {
 
-    protected $fillable = ['subscription_id', 'feature_id', 'used'];
+    protected $fillable = ['subscription_id', 'feature_id', 'used','overage_count'];
 
     public function __construct(array $attributes = [])
     {
