@@ -13,7 +13,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table(ConfigHelper::getConfigTable('subscription_feature_usage'), function (Blueprint $table) {
-            $table->dropUnique('subs_feat_unique');
+            try {
+                $table->dropUnique('subs_feat_unique');
+            } catch (\Exception $th) {
+              
+            }
+            $table->dropUnique(['subscription_id', 'feature_id']);
         });
     }
 
