@@ -180,7 +180,10 @@ class FeatureLimitationService
             $features[] = [
                 'name' => $planFeature->feature->name,
                 'description' => $planFeature->feature->description,
-                'value' => $planFeature->value
+                'value' => $planFeature->value,
+                'is_soft_limit' => $planFeature->is_soft_limit,
+                'overage_price' => $planFeature->overage_price,
+                'overage_currency' => $planFeature->overage_currency
             ];
         }
         
