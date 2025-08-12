@@ -388,7 +388,18 @@ class FeatureLimitationService
         ];
     }
 
-    
-    
-    
+    public function getSubscriptionUsageSummary(Subscription $subscription): array
+    {
+        $features = $this->getAvailableFeatures($subscription);
+        $usageSummary = [];
+        
+        foreach ($features as $feature) {
+            $usageSummary[$feature['name']] = $this->getFeatureUsageDetails($subscription, $feature['name']);
+        }
+        
+        return [
+            "summary" =>$usageSummary,
+            "subscription" => $subscription
+        ];
+    }    
 }
