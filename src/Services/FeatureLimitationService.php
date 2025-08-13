@@ -54,11 +54,11 @@ class FeatureLimitationService
     public function getFeatureValue(Subscription $subscription, string $featureName): ?string
     {
 
-        $planFeature = $this->getPlanUsageLine($subscription,$featureName);
+        $planFeature = $this->getPlanFeatureLine($subscription,$featureName);
             
         return $planFeature ? $planFeature->value : null;
     }
-    public function getPlanUsageLine(Subscription $subscription, string $featureName)
+    public function getPlanFeatureLine(Subscription $subscription, string $featureName)
     {
         // Get the feature by name
         $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
@@ -381,7 +381,7 @@ class FeatureLimitationService
         $limit = $this->getFeatureValue($subscription, $featureName);
         
 
-        $planUsageLine = $this->getPlanUsageLine($subscription, $featureName);
+        $planUsageLine = $this->getOrCreateCurrentPeriodUsage($subscription, $featureName);
         $isUnlimited = in_array($limit, ['unlimited', '-1', -1], true);
         
         return [
@@ -393,8 +393,8 @@ class FeatureLimitationService
             'percentage_used' => $isUnlimited ? 0 : (($limit > 0) ? round(($planUsageLine->used / (int)$limit) * 100, 2) : 100),
             'is_unlimited' => $isUnlimited,
             'has_reached_limit' => $this->hasReachedLimit($subscription, $featureName),
-            'current_period_start' => $this->getCurrentPeriodStart($subscription)->toDateTimeString(),
-            'next_reset_date' => $this->getNextPeriodStart($subscription)->toDateTimeString(),
+            'current_period_start' => $planUsageLine->period_start->toDateTimeString(),
+            'next_reset_date' => $planUsageLine->period_end->toDateTimeString(),
         ];
     }
 
