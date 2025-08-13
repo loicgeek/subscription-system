@@ -240,7 +240,7 @@ class FeatureLimitationService
      * @param Feature $feature
      * @return SubscriptionFeatureUsage
      */
-    private function getOrCreateCurrentPeriodUsage(Subscription $subscription, $feature)
+    private function getOrCreateCurrentPeriodUsage(Subscription $subscription, Feature   $feature)
     {
         $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
         $nextPeriodStart = $this->getNextPeriodStart($subscription);
@@ -379,9 +379,10 @@ class FeatureLimitationService
     public function getFeatureUsageDetails(Subscription $subscription, string $featureName): array
     {
         $limit = $this->getFeatureValue($subscription, $featureName);
+        $featureClass = ConfigHelper::getConfigClass('feature', Feature::class);
+        $feature = $featureClass::where('name', $featureName)->first();
         
-
-        $planUsageLine = $this->getOrCreateCurrentPeriodUsage($subscription, $featureName);
+        $planUsageLine = $this->getOrCreateCurrentPeriodUsage($subscription, $feature);
         $isUnlimited = in_array($limit, ['unlimited', '-1', -1], true);
         
         return [
