@@ -394,8 +394,8 @@ class FeatureLimitationService
             'percentage_used' => $isUnlimited ? 0 : (($limit > 0) ? round(($planUsageLine->used / (int)$limit) * 100, 2) : 100),
             'is_unlimited' => $isUnlimited,
             'has_reached_limit' => $this->hasReachedLimit($subscription, $featureName),
-            'current_period_start' => $planUsageLine->period_start->toDateTimeString(),
-            'next_reset_date' => $planUsageLine->period_end->toDateTimeString(),
+            'current_period_start' => $planUsageLine->period_start,
+            'next_reset_date' => $planUsageLine->period_end,
         ];
     }
 
