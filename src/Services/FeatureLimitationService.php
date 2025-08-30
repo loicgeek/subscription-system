@@ -7,6 +7,8 @@ use NtechServices\SubscriptionSystem\Models\Feature;
 use NtechServices\SubscriptionSystem\Models\PlanFeature;
 use NtechServices\SubscriptionSystem\Models\Subscription;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
+use NtechServices\SubscriptionSystem\Models\PlanPrice;
+use NtechServices\SubscriptionSystem\Models\PlanPriceFeatureOverride;
 use NtechServices\SubscriptionSystem\Models\SubscriptionFeatureUsage;
 
 class FeatureLimitationService
@@ -73,13 +75,43 @@ class FeatureLimitationService
         //     return null;
         // }
         
-        // Get the feature value from plan_feature
+        // First, try to get the feature override for the specific plan price
+        $planPriceFeatureOverride = null;
+        
+        if (isset($subscription->plan_price_id)) {
+            // If subscription has a specific plan price, check for overrides
+            $planPriceFeatureOverrideClass = ConfigHelper::getConfigClass('plan_price_feature_overrides', PlanPriceFeatureOverride::class);
+            $planPriceFeatureOverride = $planPriceFeatureOverrideClass::where('plan_price_id', $subscription->plan_price_id)
+                ->where('feature_id', $feature->id)
+                ->first();
+        } else {
+            // If no specific plan price, try to find the matching plan price based on subscription details
+            $planPriceClass = ConfigHelper::getConfigClass('plan_price', PlanPrice::class);
+            $planPrice = $planPriceClass::where('plan_id', $subscription->plan_id)
+                ->where('billing_cycle', $subscription->billing_cycle)
+                ->where('currency', $subscription->currency ?? 'USD') // Default to USD if no currency set
+                ->first();
+                
+            if ($planPrice) {
+                $planPriceFeatureOverrideClass = ConfigHelper::getConfigClass('plan_price_feature_overrides', PlanPriceFeatureOverride::class);
+                $planPriceFeatureOverride = $planPriceFeatureOverrideClass::where('plan_price_id', $planPrice->id)
+                    ->where('feature_id', $feature->id)
+                    ->first();
+            }
+        }
+        
+        // If we found an override, return it
+        if ($planPriceFeatureOverride) {
+            return $planPriceFeatureOverride;
+        }
+        
+        // Fall back to the default plan feature
         $planFeatureClass = ConfigHelper::getConfigClass('plan_feature', PlanFeature::class);
         $planFeature = $planFeatureClass::where('plan_id', $subscription->plan_id)
             ->where('feature_id', $feature->id)
             ->first();
             
-        return $planFeature ;
+        return $planFeature;
     }
 
         /**
