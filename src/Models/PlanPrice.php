@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use NtechServices\SubscriptionSystem\Helpers\ConfigHelper;
 use NtechServices\SubscriptionSystem\Database\Factories\PlanPriceFactory;
 
@@ -73,5 +74,22 @@ class PlanPrice extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(ConfigHelper::getConfigClass('plan', Plan::class));
+    }
+
+    public function planPriceFeatureOverrides(): HasMany
+    {
+        return $this->hasMany(ConfigHelper::getConfigClass('plan_price_feature_overrides', PlanPriceFeatureOverride::class));
+    }
+
+    public function getFeature($featureId)
+    {
+        // Check for override first
+        $override = $this->planPriceFeatureOverrides()->where('feature_id', $featureId)->first();
+        if ($override) {
+            return $override;
+        }
+        
+        // Fall back to plan's default feature value
+        return $this->plan->features()->where('feature_id', $featureId)->first();
     }
 }

@@ -16,6 +16,7 @@ return [
         'features' => 'features',
         'coupons' => 'coupons',
         'subscription_feature_usage' => 'subscription_feature_usages',
+        'plan_price_feature_overrides' => 'plan_price_feature_overrides',
     ],
     'models'=>[
         'feature' => NtechServices\SubscriptionSystem\Models\Feature::class,
