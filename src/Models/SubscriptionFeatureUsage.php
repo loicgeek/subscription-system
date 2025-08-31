@@ -31,6 +31,7 @@ use NtechServices\SubscriptionSystem\Database\Factories\PlanFactory;
     protected $fillable = ['subscription_id', 
     'feature_id', 
     'used',
+    'limit',
     'overage_count',
     'period_start',
     'period_end',

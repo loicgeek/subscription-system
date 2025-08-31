@@ -277,6 +277,7 @@ class FeatureLimitationService
         $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
         $nextPeriodStart = $this->getNextPeriodStart($subscription);
         $currentPeriodStart = $this->getCurrentPeriodStart($subscription);
+        $limit = $this->getFeatureValue($subscription, $feature->name);
 
         
         // REUSES the same record, just resets the values
@@ -289,6 +290,7 @@ class FeatureLimitationService
             'used' => 0,
             'overage_count' => 0,
             'reset_at' => $nextPeriodStart,
+            'limit' => $limit,
         ]);
         return $usage;
     }
