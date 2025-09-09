@@ -278,51 +278,31 @@ class FeatureLimitationService
         $nextPeriodStart = $this->getNextPeriodStart($subscription);
         $currentPeriodStart = $this->getCurrentPeriodStart($subscription);
         $limit = $this->getFeatureValue($subscription, $feature->name);
-
-        
-        // REUSES the same record, just resets the values
-        $usage = $usageClass::firstOrCreate([
-            'subscription_id' => $subscription->id,
-            'feature_id' => $feature->id,  // ← Always same record due to unique constraint
-            'period_start'    => $currentPeriodStart,
-            'period_end'      => $nextPeriodStart,
-        ], [
-            'used' => 0,
-            'overage_count' => 0,
-            'reset_at' => $nextPeriodStart,
-            'limit' => $limit,
-        ]);
+    
+        // Look for existing record for THIS specific period
+        $usage = $usageClass::where('subscription_id', $subscription->id)
+            ->where('feature_id', $feature->id)
+            ->where('period_start', $currentPeriodStart)
+            ->where('period_end', $nextPeriodStart)
+            ->first();
+    
+        if (!$usage) {
+            // Create new record for this period
+            $usage = $usageClass::create([
+                'subscription_id' => $subscription->id,
+                'feature_id' => $feature->id,
+                'period_start' => $currentPeriodStart,
+                'period_end' => $nextPeriodStart,
+                'used' => 0,
+                'overage_count' => 0,
+                'reset_at' => $nextPeriodStart,
+                'limit' => $limit,
+            ]);
+        }
+    
         return $usage;
     }
-    /**
-     * Check if usage should be reset based on billing period
-     *
-     * @param Subscription $subscription
-     * @param SubscriptionFeatureUsage $usage
-     * @return bool
-     */
-    private function shouldResetUsage(Subscription $subscription, SubscriptionFeatureUsage $usage): bool
-    {
-        // If no reset_at date, assume it needs reset
-        if (!$usage->reset_at) {
-            return true;
-        }
-        
-        $resetDate = Carbon::parse($usage->reset_at);
-        $now = Carbon::now();
-        
-        // If current time is past the reset date, we need to reset
-        if ($now->isAfter($resetDate)) {
-            return true;
-        }
-        
-        // Check if subscription next_billing_date has changed significantly
-        $nextBilling = Carbon::parse($subscription->next_billing_date);
-        $timeDiff = abs($resetDate->diffInHours($nextBilling));
-        
-        // If there's more than 24 hours difference, assume billing date changed
-        return $timeDiff > 24;
-    }
+   
     
     
     /**
