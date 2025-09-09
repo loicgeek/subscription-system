@@ -35,7 +35,23 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'description',
-        'slug'
+        'slug',
+        'order',           // Add this
+        'popular',         // Add this
+        'trial_value',     // Add this
+        'trial_cycle',     // Add this
+        'is_active',       // Add this
+    ];
+
+
+    /**
+     * @var array<string, string> $casts The attributes that should be cast.
+     */
+    protected $casts = [
+        'popular' => 'boolean',
+        'order' => 'integer',
+        'trial_value' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -85,6 +101,7 @@ class Plan extends Model
      */
     public function features(): BelongsToMany
     {
+        
         return $this->belongsToMany(ConfigHelper::getConfigClass('feature', Feature::class),
         ConfigHelper::getConfigTable('plan_feature'))
                     ->withPivot(['value', 'is_soft_limit', 'overage_price', 'overage_currency'])
