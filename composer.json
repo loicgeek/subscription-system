@@ -1,5 +1,5 @@
 {
-    "version": "0.0.12",
+    "version": "0.0.13",
     "name": "ntech-services/subscription-system",
     "description": "A subscription management system for Laravel applications.",
     "license": "Apache-2.0",
