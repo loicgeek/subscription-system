@@ -1,4 +1,7 @@
 # CHANGELOG
+## 0.0.10
+
+- Added support for laravel ^12.0
 
 ## 0.0.8
 
