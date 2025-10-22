@@ -38,6 +38,7 @@ class PlanFeature extends Pivot
         'is_soft_limit',
         'overage_price',
         'overage_currency',
+        'is_active',
     ];
 
     protected $casts = [

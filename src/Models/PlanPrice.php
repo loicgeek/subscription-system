@@ -36,6 +36,8 @@ class PlanPrice extends Model
         'price',
         'currency',
         'billing_cycle',
+        'is_active',
+        
     ];
 
     /**
