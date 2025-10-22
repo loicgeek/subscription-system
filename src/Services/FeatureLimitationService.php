@@ -277,26 +277,47 @@ public function getOrCreateCurrentPeriodUsage(Subscription $subscription, Featur
     $usageClass = ConfigHelper::getConfigClass('subscription_feature_usage', SubscriptionFeatureUsage::class);
     $now = Carbon::now();
     
-    // Get the period dates
+    // Get the initial period dates
     $nextPeriodStart = $this->getNextPeriodStart($subscription);
     $currentPeriodStart = $this->getCurrentPeriodStart($subscription);
-    
-    // CHECK IF PERIOD HAS ENDED - If current date is past next_billing_date, we need NEW period
-    if ($now->greaterThanOrEqualTo($nextPeriodStart)) {
-        // Period has ended, calculate NEW period dates
-        $billingCycle = $subscription->planPrice->billing_cycle;
-        $cycleDays = $this->getBillingCycleDays($billingCycle);
-        
-        $currentPeriodStart = $nextPeriodStart->copy(); // Old next becomes new start
-        $nextPeriodStart = $nextPeriodStart->copy()->addDays($cycleDays); // Calculate new end
-        
-        // Optional: Update subscription's next_billing_date
-         $subscription->update(['next_billing_date' => $nextPeriodStart]);
-    }
-    
+    $billingCycle = $subscription->planPrice->billing_cycle;
+    $cycleDays = $this->getBillingCycleDays($billingCycle);
     $limit = $this->getFeatureValue($subscription, $feature->name);
     
-    // Look for existing record for THIS specific period
+    // CHECK IF PERIOD(S) HAVE ENDED - Create records for ALL missed periods
+    while ($now->greaterThanOrEqualTo($nextPeriodStart)) {
+        // Check if usage record exists for this period
+        $existingUsage = $usageClass::where('subscription_id', $subscription->id)
+            ->where('feature_id', $feature->id)
+            ->where('period_start', $currentPeriodStart)
+            ->where('period_end', $nextPeriodStart)
+            ->first();
+        
+        // Create usage record for this past period if it doesn't exist
+        if (!$existingUsage) {
+            $usageClass::create([
+                'subscription_id' => $subscription->id,
+                'feature_id' => $feature->id,
+                'period_start' => $currentPeriodStart,
+                'period_end' => $nextPeriodStart,
+                'used' => 0,
+                'overage_count' => 0,
+                'reset_at' => $nextPeriodStart,
+                'limit' => $limit,
+            ]);
+        }
+        
+        // Advance to next period
+        $currentPeriodStart = $nextPeriodStart->copy();
+        $nextPeriodStart = $nextPeriodStart->copy()->addDays($cycleDays);
+    }
+    
+    // Update subscription's next_billing_date to the final calculated date
+    if ($subscription->next_billing_date != $nextPeriodStart) {
+        $subscription->update(['next_billing_date' => $nextPeriodStart]);
+    }
+    
+    // Now get or create the usage record for the CURRENT period
     $usage = $usageClass::where('subscription_id', $subscription->id)
         ->where('feature_id', $feature->id)
         ->where('period_start', $currentPeriodStart)
@@ -304,7 +325,7 @@ public function getOrCreateCurrentPeriodUsage(Subscription $subscription, Featur
         ->first();
     
     if (!$usage) {
-        // Create new record for this period
+        // Create new record for current period
         $usage = $usageClass::create([
             'subscription_id' => $subscription->id,
             'feature_id' => $feature->id,
